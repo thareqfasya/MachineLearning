@@ -1,0 +1,131 @@
+import warnings
+warnings.filterwarnings('ignore')
+
+import pandas as pd
+import matplotlib.pyplot as plt
+%matplotlib inline
+import seaborn as sns
+
+%matplotlib inline
+
+from collections import Counter
+
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier, ExtraTreesClassifier, VotingClassifier
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.svm import SVC
+from sklearn.model_selection import GridSearchCV, cross_val_score, StratifiedKFold, learning_curve
+from sklearn.model_selection import train_test_split
+sns.set(style='white', context='notebook', palette='deep')
+
+dataset = pd.read_csv('Titanic.csv')
+dataset.head()
+
+dataset.info()
+
+dataset.Age.plot(kind='hist');
+
+# positive skew -> median imputation
+val = dataset['Age'].median()
+dataset['Age'] = dataset['Age'].fillna(val)
+
+dataset['Cabin'].value_counts()
+
+# cabin var is not significant for this problem
+# so we drop it
+dataset.drop('Cabin', axis=1, inplace=True)
+dataset.drop('Ticket', axis=1, inplace=True)
+
+dataset.Embarked.value_counts()
+
+# Embarked is categorical col
+val = dataset.Embarked.mode()[0]
+dataset['Embarked'] = dataset['Embarked'].fillna(val)
+dataset.Embarked[dataset.Embarked == 'S'] = 1
+dataset.Embarked[dataset.Embarked == 'C'] = 2
+dataset.Embarked[dataset.Embarked == 'Q'] = 3
+
+dataset['Status'] = dataset['Parch'] + dataset['SibSp']
+dataset['FamilySize'] = dataset['SibSp'] + dataset['Parch']
+dataset['Alone'] = 1
+dataset['Alone'][dataset['FamilySize'] > 0] = 0
+
+dataset.head()
+
+dataset['Age']
+dataset.Sex[dataset['Survived']==1].value_counts().plot(kind='bar');
+dataset.Sex[dataset.Survived==0].value_counts().plot(kind='bar');
+dataset.Age[dataset.Survived==1].plot(kind='hist');
+dataset.Age[dataset.Survived==0].plot(kind='hist');
+
+dataset.head()
+
+dataset['Fare'].fillna(dataset['Fare'].median(), inplace = True)
+dataset['Age'].fillna(dataset['Age'].median(), inplace = True)
+
+dataset.info()
+dataset.head()
+
+dfdummies_sex =pd.get_dummies(dataset['Sex'],drop_first=True)
+dfdummies_sex.head()
+
+dataset.info()
+
+dataset.drop('Name', axis = 1, inplace= True)
+dataset.drop('SibSp', axis = 1, inplace= True)
+dataset.drop('Parch', axis = 1, inplace= True)
+
+dfdummies_sex =pd.get_dummies(dataset['Sex'],drop_first=True)
+dfdummies_sex.head()
+dataset.Sex = dataset.Sex.map({'male':0, 'female':1}) 
+
+dataset.head()
+
+Coll = ['Pclass','Age','Fare', 'Sex', 'Status']
+X = dataset[Coll]
+Y = dataset['Survived']
+
+# SPLIT DATA
+x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size = 0.20, random_state = 0)
+
+#regressor
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import classification_report
+logreg_pred = LogisticRegression()
+logreg_pred.fit(x_train, y_train)
+pred_logreg = logreg_pred.predict(x_test)
+print(classification_report(y_test, pred_logreg))
+
+#randomforrest
+rf = RandomForestClassifier(n_estimators=100)
+rf.fit(x_train, y_train)
+pred_rf = rf.predict(x_test)
+print(classification_report(y_test, pred_rf))
+
+#SVM
+svc_clf = SVC(kernel='rbf',C=1,gamma=0.1) 
+svc_clf.fit(x_train, y_train)
+pred_svc = svc_clf.predict(x_test)
+print(classification_report(y_test, pred_svc))
+
+from sklearn.svm import SVC, LinearSVC
+linsvc_clf = LinearSVC()
+linsvc_clf.fit(x_train, y_train)
+pred_linsvc = linsvc_clf.predict(x_test)
+print(classification_report(y_test, pred_linsvc))
+
+#KNN
+knn_clf = KNeighborsClassifier()
+knn_clf.fit(x_train, y_train)
+pred_knn = knn_clf.predict(x_test)
+print(classification_report(y_test, pred_knn))
+
+#GNB
+from sklearn.naive_bayes import GaussianNB
+gnb_clf = GaussianNB()
+gnb_clf.fit(x_train, y_train)
+pred_gnb = gnb_clf.predict(x_test)
+print(classification_report(y_test, pred_gnb))
